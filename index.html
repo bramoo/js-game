@@ -1,11 +1,42 @@
+<html>
+
 <head>
     <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto+Slab:700" rel="stylesheet">
     <link rel="stylesheet" href="main.css">
-</head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/2.6.2/phaser.js" integrity="sha256-/M28vKoYkkMS+oTf7FRKz2azs3TwYz7j7eeMGxMWiYg=" crossorigin="anonymous"></script>
+    </head>
 
 <body>
     <h1>js-game</h1>
     <p>
         This is a game written in javascript with <em>framework</em>
     </p>
+
+    <script>
+        var game = new Phaser.Game(800, 400, Phaser.CANVAS, 'js-game', {
+            preload: preload,
+            create: create,
+            update: update,
+            render: render
+        });
+
+        function preload() {
+            game.stage.backgroundColor = '#221122';
+        }
+
+        function create() {
+            var text = game.add.text(32, 32, 'Text!', {fill: '#ffffff'});
+        }
+
+        function update() {
+
+        }
+
+        function render() {
+
+        }
+
+    </script>
 </body>
+
+</html>

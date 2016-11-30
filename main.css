@@ -5,3 +5,8 @@ h1 {
 p {
     font-family: 'Open Sans', sans-serif;
 }
+
+body {
+    max-width: 800px;
+    margin: 0 auto;
+}
