@@ -39,11 +39,13 @@
             if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT)
             && !game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)){
                 game.player.x -= game.player.speed;
+                game.player.scale.x = -1;
                 game.player.play('walk');
             }
             else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)
             && !game.input.keyboard.isDown(Phaser.Keyboard.LEFT)){
                 game.player.x += game.player.speed;
+                game.player.scale.x = 1;
                 game.player.play('walk');
             }
             else{
