@@ -21,35 +21,71 @@
         });
 
         function preload() {
-            game.load.spritesheet('dude', 'assets/dude.png', 32, 64);
+            game.load.spritesheet('dude', 'assets/dude.png', 64, 64);
         }
 
         function create() {
             game.stage.backgroundColor = '#221122';
-            var text = game.add.text(32, 32, 'Text!', {fill: '#ffffff'});
+            game.stage.disableVisibilityChange = true;
 
-            game.player = game.add.sprite(200, 200, 'dude', 1);
+            game.player = game.add.sprite(200, 200, 'dude', 6);
             game.player.anchor.setTo(0.5, 0.5);
-            game.player.speed = 4;
+            game.player.speed = 400; // px/s
+            game.player.jumpspeed = -800;
+            game.player.gravity = 2000; // px/s^2
+            game.player.vel = {x: 0, y: 0};
 
-            game.player.animations.add('walk', [0,1], 10, true);
+            // one cycle should cover 50px, there are 6 frames
+            // fps = velocity * distance-per-frame
+            // fps = velocity * (frames / distance) * fudge-factor
+            var fps = game.player.speed * (6 / 50) * 0.5;
+
+            game.player.animations.add('run', [0,1,2,3,4,5], fps, true);
+            game.player.animations.add('stand', [6], 0, true);
+            game.player.animations.add('jump', [7], 0, true);
         }
 
         function update() {
+            var t = game.time.elapsedMS;
+            var p = game.player;
+
+            if (p.x < 400 && p.y == 200 && game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
+                p.vel.y = p.jumpspeed;
+
+            p.vel.y += p.gravity * t / 1000;
+            p.y += p.vel.y * t / 1000;
+
+            if (p.x < 400 && p.y > 200){
+                p.y = 200;
+                p.vel.y = 0;
+            }
+
             if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT)
-            && !game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)){
-                game.player.x -= game.player.speed;
-                game.player.scale.x = -1;
-                game.player.play('walk');
+                && !game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)){
+
+                p.vel.x = -p.speed * t / 1000;
+                p.x += p.vel.x;
+                p.scale.x = 1;
+
+                if (p.x < 400 && p.y == 200)
+                    p.play('run');
+                else
+                    p.play('jump');
             }
             else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)
-            && !game.input.keyboard.isDown(Phaser.Keyboard.LEFT)){
-                game.player.x += game.player.speed;
-                game.player.scale.x = 1;
-                game.player.play('walk');
+                     && !game.input.keyboard.isDown(Phaser.Keyboard.LEFT)){
+
+                p.vel.x = p.speed * t / 1000;
+                p.x += p.vel.x;
+                p.scale.x = -1;
+
+                if (p.x < 400 && p.y == 200)
+                    p.play('run');
+                else
+                    p.play('jump');
             }
             else{
-                game.player.animations.stop();
+                p.play('stand');
             }
         }
 
