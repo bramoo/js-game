@@ -13,6 +13,12 @@ var Game = (function () {
     Game.prototype.create = function () {
         this.game.stage.backgroundColor = '#221122';
         this.game.stage.disableVisibilityChange = true;
+        var floor = this.game.add.graphics(0, 0);
+        floor.beginFill(0xFFFFFF);
+        floor.drawRect(0, 0, 400, 200);
+        floor.endFill();
+        var floorSprite = this.game.add.sprite(0, 232);
+        floorSprite.addChild(floor);
         this.player = new Player();
         this.player.sprite = this.game.add.sprite(200, 200, 'dude', 6);
         this.player.sprite.anchor.setTo(0.5, 0.5);
