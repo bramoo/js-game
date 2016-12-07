@@ -1,2 +1,2 @@
-# js-game
-Making a game with Javascript
+# ts-game
+Making a game with Typescript
