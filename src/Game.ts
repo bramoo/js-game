@@ -2,6 +2,7 @@ class Game
 {
     game:Phaser.Game;
     player:Player;
+    private clicking: boolean = false;
 
     constructor(){
         this.game = new Phaser.Game(800, 400, Phaser.AUTO, 'ts-game', {
@@ -22,28 +23,32 @@ class Game
         this.game.stage.backgroundColor = '#221122';
         this.game.stage.disableVisibilityChange = true;
 
-        var floor = this.game.add.graphics(0, 0);
+        let floor = new Phaser.Graphics(this.game, 0, 0);
         floor.beginFill(0xFFFFFF);
         floor.drawRect(0, 0, 400, 200);
         floor.endFill();
 
-        var floorSprite = this.game.add.sprite(0, 232);
+        let floorSprite = this.game.add.sprite(0, 232);
         floorSprite.addChild(floor);
 
-        this.player = new Player();
-        this.player.sprite = this.game.add.sprite(200, 200, 'dude', 6);
-        this.player.sprite.anchor.setTo(0.5, 0.5);
+        let ropeGraphics = new Phaser.Graphics(this.game, 0, 0);
+        ropeGraphics.beginFill(0xFFFFFF);
+        ropeGraphics.drawRect(0, 0, 4, 4);
+        ropeGraphics.endFill();
 
-        this.player.speed = 400; // px/s
-        this.player.jumpspeed = -800;
-        this.player.gravity = 2000; // px/s^2
-        this.player.vel = new Phaser.Point(0, 0);
-
+        this.player = new Player(
+            this.game,
+            this.game.add.sprite(200, 200, 'dude', 6),
+            this.game.add.rope(0, 0, ropeGraphics.generateTexture(), null, [new Phaser.Point(0,0), new Phaser.Point(0,0)]),
+            400,
+            -800,
+            new Phaser.Point(0,0),
+            2000);
 
         // one cycle should cover 50px, there are 6 frames
         // fps = velocity * distance-per-frame
         // fps = velocity * (frames / distance) * fudge-factor
-        var fps = this.player.speed * (6 / 50) * 0.5;
+        let fps = this.player.speed * (6 / 50) * 0.5;
 
         this.player.sprite.animations.add('run', [0,1,2,3,4,5], fps, true);
         this.player.sprite.animations.add('stand', [6], 0, true);
@@ -52,46 +57,21 @@ class Game
 
     update()
     {
-        var t = this.game.time.elapsedMS;
-        var p = this.player;
+        let t = this.game.time.elapsedMS;
 
-        if (p.sprite.x < 400 && p.sprite.y == 200 && this.game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR))
-            p.vel.y = p.jumpspeed;
+        this.player.update(t);
 
-        p.vel.y += p.gravity * t / 1000;
-        p.sprite.y += p.vel.y * t / 1000;
+        let pointer = this.game.input.activePointer;
 
-        if (p.sprite.x < 400 && p.sprite.y > 200){
-            p.sprite.y = 200;
-            p.vel.y = 0;
+        if (pointer.leftButton.isDown && !this.clicking)
+        {
+            this.clicking = true;
+            this.player.updateRope(pointer.position);
+            this.player.rope.exists = true;
         }
-
-        if (this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT)
-            && !this.game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)){
-
-            p.vel.x = -p.speed * t / 1000;
-            p.sprite.x += p.vel.x;
-            p.sprite.scale.x = 1;
-
-            if (p.sprite.x < 400 && p.sprite.y == 200)
-                p.sprite.play('run');
-            else
-                p.sprite.play('jump');
-        }
-        else if (this.game.input.keyboard.isDown(Phaser.Keyboard.RIGHT)
-                    && !this.game.input.keyboard.isDown(Phaser.Keyboard.LEFT)){
-
-            p.vel.x = p.speed * t / 1000;
-            p.sprite.x += p.vel.x;
-            p.sprite.scale.x = -1;
-
-            if (p.sprite.x < 400 && p.sprite.y == 200)
-                p.sprite.play('run');
-            else
-                p.sprite.play('jump');
-        }
-        else{
-            p.sprite.play('stand');
+        else if(pointer.leftButton.isUp && this.clicking){
+            this.clicking = false;
+            this.player.rope.exists = false;
         }
     }
 
