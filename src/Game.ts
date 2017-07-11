@@ -2,6 +2,7 @@ class Game
 {
     game:Phaser.Game;
     player:Player;
+    filter:Phaser.Filter;
     private clicking: boolean = false;
 
     constructor(){
@@ -16,6 +17,7 @@ class Game
     preload()
     {
         this.game.load.spritesheet('dude', 'assets/dude.png', 64, 64);
+        this.game.load.shader('tv', 'assets/tv2.frag');
     }
 
     create()
@@ -53,6 +55,11 @@ class Game
         this.player.sprite.animations.add('run', [0,1,2,3,4,5], fps, true);
         this.player.sprite.animations.add('stand', [6], 0, true);
         this.player.sprite.animations.add('jump', [7], 0, true);
+
+        this.filter = new Phaser.Filter(this.game, null, this.game.cache.getShader('tv'));
+        this.filter.uniforms.resolution = { type: '3f', value: {x: this.game.width, y: this.game.height, z: 0.0}};
+        
+        this.game.stage.filters = [this.filter];
     }
 
     update()
@@ -66,13 +73,15 @@ class Game
         if (pointer.leftButton.isDown && !this.clicking)
         {
             this.clicking = true;
-            this.player.updateRope(pointer.position);
+            this.player.updateAnchor(pointer.position);
             this.player.rope.exists = true;
         }
         else if(pointer.leftButton.isUp && this.clicking){
             this.clicking = false;
             this.player.rope.exists = false;
         }
+
+        this.filter.update();
     }
 
     render()
