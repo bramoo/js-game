@@ -1,8 +1,6 @@
 interface IPhysics{
-    x: number;
-    y: number;
-    velx: number;
-    vely: number;
+    position: Phaser.Point;
+    vel: Phaser.Point;
     mass: number;
     gravity: number;
 }
