@@ -1,31 +1,55 @@
 module Tsgame {
     export class Player extends Phaser.Sprite implements IPhysics {
+
         private ropeAnchor: Phaser.Point;
         private ropePhysics: RopePhysics;
         private ropeLength: number;
         private lastRopePoint: Phaser.Point = new Phaser.Point();
-        
+
+        public rope: Phaser.Rope;
+        public speed: number;
+        public jumpspeed: number;
+        public vel: Phaser.Point;
+        public mass: number;
+        public gravity: number;
         public energy: number;
 
-        constructor(game: Phaser.Game, 
-                x: number, 
-                y: number,
-                public rope: Phaser.Rope,
-                public speed: number,
-                public jumpspeed: number,
-                public vel: Phaser.Point,
-                public mass: number,
-                public gravity: number) {
+        constructor(game: Phaser.Game, x: number, y: number,){
 
             super(game, x, y, 'dude', 6)
+
+            this.speed = 400;
+            this.jumpspeed = -800;
+            this.vel = new Phaser.Point(0, 0);
+            this.mass = 10;
+            this.gravity = 2000;
+
+            // one cycle should cover 50px, there are 6 frames
+            // fps = velocity * distance-per-frame
+            // fps = velocity * (frames / distance) * fudge-factor
+            let fps = this.speed * (6 / 50) * 0.5;
+
+            this.animations.add('run', [0,1,2,3,4,5], fps, true);
+            this.animations.add('stand', [6], 0, true);
+            this.animations.add('jump', [7], 0, true);
+
+
             this.anchor.setTo(0.5, 0.5);
             this.ropeAnchor = new Phaser.Point();
             this.ropePhysics = new RopePhysics(this);
 
+            // TODO: generate texture in preload
+            let ropeGraphics = new Phaser.Graphics(this.game, 0, 0);
+            ropeGraphics.beginFill(0xFFFFFF);
+            ropeGraphics.drawRect(0, 0, 4, 4);
+            ropeGraphics.endFill();
+            
+            this.rope = new Phaser.Rope(this.game, 0, 0, ropeGraphics.generateTexture(), null, new Array(2));
             this.rope.points = [this.position, this.ropeAnchor];
             this.rope.exists = false;
 
             game.add.existing(this);
+            game.add.existing(this.rope);
         }
 
         update() {

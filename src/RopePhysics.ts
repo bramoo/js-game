@@ -3,8 +3,6 @@ module Tsgame {
         private anchor: Phaser.Point;
         private length: number;
         private object: IPhysics;
-        private lastPosition: Phaser.Point;
-        private totalEnergy: number;
 
         constructor(object: IPhysics) {
             this.object = object;
@@ -12,8 +10,8 @@ module Tsgame {
 
         public updateAnchor(anchor: Phaser.Point): void {
             this.anchor = new Phaser.Point(anchor.x, anchor.y);
-            this.length = Phaser.Point.distance(anchor, new Phaser.Point(this.object.position.x, this.object.position.y));
-            this.totalEnergy = this.GetTotalEnergy(this.object.mass,
+            this.length = Phaser.Point.distance(anchor, this.object.position);
+            this.object.energy = this.GetTotalEnergy(this.object.mass,
                 this.object.gravity,
                 -this.object.position.y,
                 this.object.vel.x,
@@ -21,30 +19,26 @@ module Tsgame {
         }
 
         public update(time: number) {
-            this.lastPosition = new Phaser.Point(this.object.position.x, this.object.position.y);
-
             this.object.vel.y += this.object.gravity * time / 1000;
             this.object.position.y += this.object.vel.y * time / 1000;
 
             this.object.position.x += this.object.vel.x * time / 1000;
 
             // vector from object to anchor
-            let currentToAnchor = new Phaser.Point(this.anchor.x - this.object.position.x, this.anchor.y - this.object.position.y);
+            let currentToAnchor = Phaser.Point.subtract(this.anchor, this.object.position);
 
             // vector from desired object location to anchor, calculated by scaling oa to rope length
-            let newToAnchor = new Phaser.Point();
-            newToAnchor.copyFrom(currentToAnchor);
+            let newToAnchor = new Phaser.Point(currentToAnchor.x, currentToAnchor.y);
             newToAnchor.normalize().multiply(this.length, this.length);
 
             // vector from current object location to desired object location
             let currentToNew = Phaser.Point.subtract(currentToAnchor, newToAnchor);
 
             // update object location
-            this.object.position.x += currentToNew.x;
-            this.object.position.y += currentToNew.y;
+            this.object.position.add(currentToNew.x, currentToNew.y);
 
             // tangent to rope
-            let move = new Phaser.Point(this.object.position.x - this.lastPosition.x, this.object.position.y - this.lastPosition.y);
+            let move = Phaser.Point.subtract(this.object.position, this.object.previousPosition);
             let vTangential = new Phaser.Point(newToAnchor.y, -newToAnchor.x);
 
             // make tangent point in the same general direction as the move vector
@@ -57,7 +51,7 @@ module Tsgame {
             let cke = this.GetKineticEnergy(this.object.mass, vTangential.x, vTangential.y);
 
             // desired kinetic energy
-            let dke = this.totalEnergy - this.GetPotentialEnergy(this.object.mass,
+            let dke = this.object.energy - this.GetPotentialEnergy(this.object.mass,
                 this.object.gravity,
                 -this.object.position.y);
 

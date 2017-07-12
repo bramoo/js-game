@@ -47,23 +47,7 @@ var Tsgame;
             floor.endFill();
             var floorSprite = this.game.add.sprite(0, 232);
             floorSprite.addChild(floor);
-            var ropeGraphics = new Phaser.Graphics(this.game, 0, 0);
-            ropeGraphics.beginFill(0xFFFFFF);
-            ropeGraphics.drawRect(0, 0, 4, 4);
-            ropeGraphics.endFill();
-            this.player = new Tsgame.Player(this.game, 200, // x
-            200, // y
-            this.game.add.rope(0, 0, ropeGraphics.generateTexture(), null, [new Phaser.Point(0, 0), new Phaser.Point(0, 0)]), 400, // speed
-            -800, // jumpspeed
-            new Phaser.Point(0, 0), 10, // mass
-            2000); // gravity
-            // one cycle should cover 50px, there are 6 frames
-            // fps = velocity * distance-per-frame
-            // fps = velocity * (frames / distance) * fudge-factor
-            var fps = this.player.speed * (6 / 50) * 0.5;
-            this.player.animations.add('run', [0, 1, 2, 3, 4, 5], fps, true);
-            this.player.animations.add('stand', [6], 0, true);
-            this.player.animations.add('jump', [7], 0, true);
+            this.player = new Tsgame.Player(this.game, 200, 200);
             this.filter = new Phaser.Filter(this.game, null, this.game.cache.getShader('tv'));
             this.filter.uniforms.resolution = { type: '3f', value: { x: this.game.width, y: this.game.height, z: 0.0 } };
             this.game.stage.filters = [this.filter];
@@ -92,21 +76,34 @@ var Tsgame;
 (function (Tsgame) {
     var Player = (function (_super) {
         __extends(Player, _super);
-        function Player(game, x, y, rope, speed, jumpspeed, vel, mass, gravity) {
+        function Player(game, x, y) {
             var _this = _super.call(this, game, x, y, 'dude', 6) || this;
-            _this.rope = rope;
-            _this.speed = speed;
-            _this.jumpspeed = jumpspeed;
-            _this.vel = vel;
-            _this.mass = mass;
-            _this.gravity = gravity;
             _this.lastRopePoint = new Phaser.Point();
+            _this.speed = 400;
+            _this.jumpspeed = -800;
+            _this.vel = new Phaser.Point(0, 0);
+            _this.mass = 10;
+            _this.gravity = 2000;
+            // one cycle should cover 50px, there are 6 frames
+            // fps = velocity * distance-per-frame
+            // fps = velocity * (frames / distance) * fudge-factor
+            var fps = _this.speed * (6 / 50) * 0.5;
+            _this.animations.add('run', [0, 1, 2, 3, 4, 5], fps, true);
+            _this.animations.add('stand', [6], 0, true);
+            _this.animations.add('jump', [7], 0, true);
             _this.anchor.setTo(0.5, 0.5);
             _this.ropeAnchor = new Phaser.Point();
             _this.ropePhysics = new Tsgame.RopePhysics(_this);
+            // TODO: generate texture in preload
+            var ropeGraphics = new Phaser.Graphics(_this.game, 0, 0);
+            ropeGraphics.beginFill(0xFFFFFF);
+            ropeGraphics.drawRect(0, 0, 4, 4);
+            ropeGraphics.endFill();
+            _this.rope = new Phaser.Rope(_this.game, 0, 0, ropeGraphics.generateTexture(), null, new Array(2));
             _this.rope.points = [_this.position, _this.ropeAnchor];
             _this.rope.exists = false;
             game.add.existing(_this);
+            game.add.existing(_this.rope);
             return _this;
         }
         Player.prototype.update = function () {
@@ -170,27 +167,24 @@ var Tsgame;
         }
         RopePhysics.prototype.updateAnchor = function (anchor) {
             this.anchor = new Phaser.Point(anchor.x, anchor.y);
-            this.length = Phaser.Point.distance(anchor, new Phaser.Point(this.object.position.x, this.object.position.y));
-            this.totalEnergy = this.GetTotalEnergy(this.object.mass, this.object.gravity, -this.object.position.y, this.object.vel.x, this.object.vel.y);
+            this.length = Phaser.Point.distance(anchor, this.object.position);
+            this.object.energy = this.GetTotalEnergy(this.object.mass, this.object.gravity, -this.object.position.y, this.object.vel.x, this.object.vel.y);
         };
         RopePhysics.prototype.update = function (time) {
-            this.lastPosition = new Phaser.Point(this.object.position.x, this.object.position.y);
             this.object.vel.y += this.object.gravity * time / 1000;
             this.object.position.y += this.object.vel.y * time / 1000;
             this.object.position.x += this.object.vel.x * time / 1000;
             // vector from object to anchor
-            var currentToAnchor = new Phaser.Point(this.anchor.x - this.object.position.x, this.anchor.y - this.object.position.y);
+            var currentToAnchor = Phaser.Point.subtract(this.anchor, this.object.position);
             // vector from desired object location to anchor, calculated by scaling oa to rope length
-            var newToAnchor = new Phaser.Point();
-            newToAnchor.copyFrom(currentToAnchor);
+            var newToAnchor = new Phaser.Point(currentToAnchor.x, currentToAnchor.y);
             newToAnchor.normalize().multiply(this.length, this.length);
             // vector from current object location to desired object location
             var currentToNew = Phaser.Point.subtract(currentToAnchor, newToAnchor);
             // update object location
-            this.object.position.x += currentToNew.x;
-            this.object.position.y += currentToNew.y;
+            this.object.position.add(currentToNew.x, currentToNew.y);
             // tangent to rope
-            var move = new Phaser.Point(this.object.position.x - this.lastPosition.x, this.object.position.y - this.lastPosition.y);
+            var move = Phaser.Point.subtract(this.object.position, this.object.previousPosition);
             var vTangential = new Phaser.Point(newToAnchor.y, -newToAnchor.x);
             // make tangent point in the same general direction as the move vector
             if (vTangential.dot(move) < 0) {
@@ -200,7 +194,7 @@ var Tsgame;
             // current kinetic energy
             var cke = this.GetKineticEnergy(this.object.mass, vTangential.x, vTangential.y);
             // desired kinetic energy
-            var dke = this.totalEnergy - this.GetPotentialEnergy(this.object.mass, this.object.gravity, -this.object.position.y);
+            var dke = this.object.energy - this.GetPotentialEnergy(this.object.mass, this.object.gravity, -this.object.position.y);
             // ratio of desired velocity to current velocity
             var r = Math.sqrt(dke / cke);
             this.object.vel.x = vTangential.x * r;
