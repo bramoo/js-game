@@ -10,6 +10,21 @@ var __extends = (this && this.__extends) || (function () {
 })();
 window.onload = function () {
     var game = new Tsgame.Game();
+    var webFontConfig = {
+        active: function () { return game.state.getCurrentState().webFontsLoaded(); },
+        google: {
+            families: [
+                'Audiowide',
+                'Bungee',
+                'Bungee+Hairline',
+                'Bungee+Inline',
+                'Bungee+Outline',
+                'Gruppo',
+                'Monoton'
+            ]
+        }
+    };
+    WebFont.load(webFontConfig);
 };
 var Tsgame;
 (function (Tsgame) {
@@ -17,60 +32,17 @@ var Tsgame;
         __extends(Game, _super);
         function Game() {
             var _this = _super.call(this, 800, 400, Phaser.AUTO, 'ts-game', null) || this;
-            _this.state.add('Level', Tsgame.Level, false);
-            _this.state.start('Level');
+            _this.state.add('Boot', Tsgame.State.Boot, false);
+            _this.state.add('Preloader', Tsgame.State.Preloader, false);
+            _this.state.add('MainMenu', Tsgame.State.MainMenu, false);
+            _this.state.add('Level', Tsgame.State.Level, false);
+            _this.fontsLoaded = false;
+            _this.state.start('Boot');
             return _this;
         }
         return Game;
     }(Phaser.Game));
     Tsgame.Game = Game;
-})(Tsgame || (Tsgame = {}));
-var Tsgame;
-(function (Tsgame) {
-    var Level = (function (_super) {
-        __extends(Level, _super);
-        function Level() {
-            var _this = _super !== null && _super.apply(this, arguments) || this;
-            _this.clicking = false;
-            return _this;
-        }
-        Level.prototype.preload = function () {
-            this.game.load.spritesheet('dude', 'assets/dude.png', 64, 64);
-            this.game.load.shader('tv', 'assets/tv2.frag');
-        };
-        Level.prototype.create = function () {
-            this.game.stage.backgroundColor = '#221122';
-            this.game.stage.disableVisibilityChange = true;
-            var floor = new Phaser.Graphics(this.game, 0, 0);
-            floor.beginFill(0xFFFFFF);
-            floor.drawRect(0, 0, 400, 200);
-            floor.endFill();
-            var floorSprite = this.game.add.sprite(0, 232);
-            floorSprite.addChild(floor);
-            this.player = new Tsgame.Player(this.game, 200, 200);
-            this.filter = new Phaser.Filter(this.game, null, this.game.cache.getShader('tv'));
-            this.filter.uniforms.resolution = { type: '3f', value: { x: this.game.width, y: this.game.height, z: 0.0 } };
-            this.game.stage.filters = [this.filter];
-        };
-        Level.prototype.update = function () {
-            this.player.update();
-            var pointer = this.game.input.activePointer;
-            if (pointer.leftButton.isDown && !this.clicking) {
-                this.clicking = true;
-                this.player.updateAnchor(pointer.position);
-                this.player.rope.exists = true;
-            }
-            else if (pointer.leftButton.isUp && this.clicking) {
-                this.clicking = false;
-                this.player.rope.exists = false;
-            }
-            this.filter.update();
-        };
-        Level.prototype.render = function () {
-        };
-        return Level;
-    }(Phaser.State));
-    Tsgame.Level = Level;
 })(Tsgame || (Tsgame = {}));
 var Tsgame;
 (function (Tsgame) {
@@ -212,5 +184,201 @@ var Tsgame;
         return RopePhysics;
     }());
     Tsgame.RopePhysics = RopePhysics;
+})(Tsgame || (Tsgame = {}));
+var Tsgame;
+(function (Tsgame) {
+    var State;
+    (function (State) {
+        var Boot = (function (_super) {
+            __extends(Boot, _super);
+            function Boot() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            Boot.prototype.preload = function () {
+            };
+            Boot.prototype.create = function () {
+                this.input.maxPointers = 1;
+                this.stage.disableVisibilityChange = true;
+                if (this.game.fontsLoaded) {
+                    this.game.state.start('Preloader', true, false);
+                }
+                else {
+                    this.ready = true;
+                    console.log("Boot ready, waiting for webfonts ...");
+                }
+                //this.input.onDown.addOnce(() => this.game.state.start('Preloader', true, false), this);
+            };
+            Boot.prototype.webFontsLoaded = function () {
+                this.game.fontsLoaded = true;
+                if (this.ready) {
+                    this.game.state.start('Preloader', true, false);
+                }
+                else {
+                    console.log("Webfonts loaded, waiting for boot ...");
+                }
+            };
+            return Boot;
+        }(Phaser.State));
+        State.Boot = Boot;
+    })(State = Tsgame.State || (Tsgame.State = {}));
+})(Tsgame || (Tsgame = {}));
+var Tsgame;
+(function (Tsgame) {
+    var State;
+    (function (State) {
+        var Level = (function (_super) {
+            __extends(Level, _super);
+            function Level() {
+                var _this = _super !== null && _super.apply(this, arguments) || this;
+                _this.clicking = false;
+                return _this;
+            }
+            Level.prototype.preload = function () {
+            };
+            Level.prototype.create = function () {
+                this.game.stage.backgroundColor = '#221122';
+                this.game.stage.disableVisibilityChange = true;
+                var floor = new Phaser.Graphics(this.game, 0, 0);
+                floor.beginFill(0xFFFFFF);
+                floor.drawRect(0, 0, 400, 200);
+                floor.endFill();
+                var floorSprite = this.game.add.sprite(0, 232);
+                floorSprite.addChild(floor);
+                this.player = new Tsgame.Player(this.game, 200, 200);
+                this.filter = new Phaser.Filter(this.game, null, this.game.cache.getShader('tv'));
+                this.filter.uniforms.resolution = { type: '3f', value: { x: this.game.width, y: this.game.height, z: 0.0 } };
+                this.game.stage.filters = [this.filter];
+            };
+            Level.prototype.update = function () {
+                this.player.update();
+                var pointer = this.game.input.activePointer;
+                if (pointer.leftButton.isDown && !this.clicking) {
+                    this.clicking = true;
+                    this.player.updateAnchor(pointer.position);
+                    this.player.rope.exists = true;
+                }
+                else if (pointer.leftButton.isUp && this.clicking) {
+                    this.clicking = false;
+                    this.player.rope.exists = false;
+                }
+                this.filter.update();
+            };
+            Level.prototype.render = function () {
+            };
+            return Level;
+        }(Phaser.State));
+        State.Level = Level;
+    })(State = Tsgame.State || (Tsgame.State = {}));
+})(Tsgame || (Tsgame = {}));
+var Tsgame;
+(function (Tsgame) {
+    var State;
+    (function (State) {
+        var MainMenu = (function (_super) {
+            __extends(MainMenu, _super);
+            function MainMenu() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            MainMenu.prototype.create = function () {
+                var titleStyle = {
+                    font: "180px Bungee Outline",
+                    fill: "#fff",
+                    boundsAlignH: "center"
+                };
+                var titleBounds = new Phaser.Rectangle(0, 0, 0, 0);
+                titleBounds.width = 400;
+                titleBounds.height = 185;
+                titleBounds.centerX = this.game.width / 2;
+                titleBounds.centerY = 70;
+                var title = this.add.text(0, 0, "TS-GAME", titleStyle);
+                title.setTextBounds(titleBounds.x, titleBounds.y, titleBounds.width, titleBounds.height);
+                //this.game.debug.rectangle(titleBounds, "#0f0", false);
+                var itemStyle = {
+                    font: "90px Bungee Hairline",
+                    fill: "#fff",
+                    boundsAlignH: "center"
+                };
+                var itemBounds = new Phaser.Rectangle(0, 0, 0, 0);
+                itemBounds.width = 400;
+                itemBounds.height = 90;
+                itemBounds.centerX = this.game.width / 2;
+                itemBounds.centerY = 200;
+                var play = this.add.text(0, 0, "Play", itemStyle);
+                play.setTextBounds(itemBounds.x, itemBounds.y, itemBounds.width, itemBounds.height);
+                // this.game.debug.rectangle(itemBounds, "#0f0", false);
+                itemBounds.centerY = 300;
+                var how = this.add.text(0, 0, "How?", itemStyle);
+                how.setTextBounds(itemBounds.x, itemBounds.y, itemBounds.width, itemBounds.height);
+                // this.game.debug.rectangle(itemBounds, "#0f0", false);
+                this.items = [play, how];
+                this.selection = 0;
+                var highlightGraphics = new Phaser.Graphics(this.game, 0, 0);
+                highlightGraphics.lineStyle(5, 0xFFFFFF);
+                highlightGraphics.moveTo(5, 5);
+                highlightGraphics.lineTo(95, 5);
+                highlightGraphics.moveTo(405, 5);
+                highlightGraphics.lineTo(495, 5);
+                this.highlight = this.add.sprite(0, 0, highlightGraphics.generateTexture());
+                this.highlight.width = 500;
+                this.highlight.height = 10;
+                this.highlight.anchor.setTo(0.5, 0.5);
+                this.highlight.centerX = this.game.width / 2;
+                this.highlight.centerY = play.textBounds.centerY;
+                this.lastMoved = this.game.time.now - 100;
+                this.filter = new Phaser.Filter(this.game, null, this.game.cache.getShader('tv'));
+                this.filter.uniforms.resolution = { type: '3f', value: { x: this.game.width, y: this.game.height, z: 0.0 } };
+                this.stage.filters = [this.filter];
+            };
+            MainMenu.prototype.update = function () {
+                var elapsed = this.game.time.now - this.lastMoved;
+                if (elapsed > 200) {
+                    if (this.input.keyboard.isDown(Phaser.KeyCode.DOWN)) {
+                        this.selection = this.mod(this.selection + 1, this.items.length);
+                        this.lastMoved = this.game.time.now;
+                    }
+                    if (this.input.keyboard.isDown(Phaser.KeyCode.UP)) {
+                        this.selection = this.mod(this.selection - 1, this.items.length);
+                        this.lastMoved = this.game.time.now;
+                    }
+                }
+                this.highlight.centerY = this.items[this.selection].textBounds.centerY;
+                this.filter.update();
+            };
+            MainMenu.prototype.mod = function (i, n) {
+                return ((i % n) + n) % n;
+            };
+            return MainMenu;
+        }(Phaser.State));
+        State.MainMenu = MainMenu;
+    })(State = Tsgame.State || (Tsgame.State = {}));
+})(Tsgame || (Tsgame = {}));
+var Tsgame;
+(function (Tsgame) {
+    var State;
+    (function (State) {
+        var Preloader = (function (_super) {
+            __extends(Preloader, _super);
+            function Preloader() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            Preloader.prototype.preload = function () {
+                var preloadGraphics = new Phaser.Graphics(this.game);
+                preloadGraphics.beginFill(0xFFFFFF);
+                preloadGraphics.drawRect(0, 0, 600, 20);
+                preloadGraphics.endFill();
+                this.preloadBar = this.add.sprite(100, 190, preloadGraphics.generateTexture());
+                this.load.setPreloadSprite(this.preloadBar);
+                this.load.spritesheet('dude', 'assets/dude.png', 64, 64);
+                this.load.shader('tv', 'assets/tv2.frag');
+            };
+            Preloader.prototype.create = function () {
+                var _this = this;
+                var tween = this.add.tween(this.preloadBar).to({ alpha: 0 }, 100, Phaser.Easing.Linear.None, true);
+                tween.onComplete.add(function () { return _this.game.state.start('MainMenu', true, false); });
+            };
+            return Preloader;
+        }(Phaser.State));
+        State.Preloader = Preloader;
+    })(State = Tsgame.State || (Tsgame.State = {}));
 })(Tsgame || (Tsgame = {}));
 //# sourceMappingURL=game.js.map

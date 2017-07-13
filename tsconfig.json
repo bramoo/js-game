@@ -1,6 +1,8 @@
 {
+    "compileOnSave": true,
     "compilerOptions": {
         "target": "ES5",
-        "sourceMap": true
+        "sourceMap": true,
+        "watch": true
     }
 }

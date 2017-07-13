@@ -1,4 +1,4 @@
-module Tsgame {
+module Tsgame.State {
     export class Level extends Phaser.State {
 
         game:Phaser.Game;
@@ -8,8 +8,6 @@ module Tsgame {
 
         preload()
         {
-            this.game.load.spritesheet('dude', 'assets/dude.png', 64, 64);
-            this.game.load.shader('tv', 'assets/tv2.frag');
         }
 
         create()

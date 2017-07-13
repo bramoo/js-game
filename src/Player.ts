@@ -42,7 +42,7 @@ module Tsgame {
             let ropeGraphics = new Phaser.Graphics(this.game, 0, 0);
             ropeGraphics.beginFill(0xFFFFFF);
             ropeGraphics.drawRect(0, 0, 4, 4);
-            ropeGraphics.endFill();
+            ropeGraphics.endFill();           
             
             this.rope = new Phaser.Rope(this.game, 0, 0, ropeGraphics.generateTexture(), null, new Array(2));
             this.rope.points = [this.position, this.ropeAnchor];
