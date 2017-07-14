@@ -7,6 +7,8 @@ module Tsgame.State {
         highlight: Phaser.Sprite;
         lastMoved: number;
 
+        menu: Menu;
+
         create() {
             let titleStyle = {
                 font: "180px Bungee Outline",
@@ -49,9 +51,6 @@ module Tsgame.State {
 
             // this.game.debug.rectangle(itemBounds, "#0f0", false);
 
-            this.items = [play, how];
-            this.selection = 0;
-
             let highlightGraphics = new Phaser.Graphics(this.game, 0, 0);
             highlightGraphics.lineStyle(5, 0xFFFFFF);
             highlightGraphics.moveTo(5, 5);
@@ -63,8 +62,12 @@ module Tsgame.State {
             this.highlight.width = 500;
             this.highlight.height = 10;
             this.highlight.anchor.setTo(0.5, 0.5);
-            this.highlight.centerX = this.game.width / 2;
-            this.highlight.centerY = play.textBounds.centerY;
+
+
+            this.menu = new Menu(this.highlight, 
+                new MenuItem(play, () => this.game.state.start("Level")),
+                new MenuItem(how, () => this.game.state.start("Help"))
+            );
 
             this.lastMoved = this.game.time.now - 100;
 
@@ -77,19 +80,30 @@ module Tsgame.State {
         update(){
             let elapsed = this.game.time.now - this.lastMoved;
 
-            if (elapsed > 200){
-                if (this.input.keyboard.isDown(Phaser.KeyCode.DOWN)){
-                    this.selection = this.mod(this.selection + 1, this.items.length);
+            let action = this.input.keyboard.isDown(Phaser.KeyCode.ENTER)
+                || this.input.keyboard.isDown(Phaser.KeyCode.SPACEBAR);
+            let down = this.input.keyboard.isDown(Phaser.KeyCode.DOWN);
+            let up = this.input.keyboard.isDown(Phaser.KeyCode.UP);
+
+            if (action){
+                this.menu.doAction();
+            }
+
+            if (elapsed > 300){
+                if (down){
+                    this.menu.selectNext();
                     this.lastMoved = this.game.time.now;
                 }
 
-                if (this.input.keyboard.isDown(Phaser.KeyCode.UP)){
-                    this.selection = this.mod(this.selection - 1, this.items.length);
+                if (up){
+                    this.menu.selectPrevious();
                     this.lastMoved = this.game.time.now;
                 }
             }
 
-            this.highlight.centerY = this.items[this.selection].textBounds.centerY;
+            if (!up && !down){
+                this.lastMoved = 0;
+            }
 
             this.filter.update();
         }

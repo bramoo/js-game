@@ -35,6 +35,7 @@ var Tsgame;
             _this.state.add('Boot', Tsgame.State.Boot, false);
             _this.state.add('Preloader', Tsgame.State.Preloader, false);
             _this.state.add('MainMenu', Tsgame.State.MainMenu, false);
+            _this.state.add('Help', Tsgame.State.Help, false);
             _this.state.add('Level', Tsgame.State.Level, false);
             _this.fontsLoaded = false;
             _this.state.start('Boot');
@@ -43,6 +44,65 @@ var Tsgame;
         return Game;
     }(Phaser.Game));
     Tsgame.Game = Game;
+})(Tsgame || (Tsgame = {}));
+var Tsgame;
+(function (Tsgame) {
+    var Menu = (function () {
+        function Menu(highlight) {
+            var items = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                items[_i - 1] = arguments[_i];
+            }
+            this.index = 0;
+            this.highlight = highlight;
+            var itemsArray = new Array();
+            this.items = itemsArray.concat(items);
+            if (this.items.length > 0) {
+                this.selectIndex(0);
+            }
+        }
+        Menu.prototype.setHighlight = function (highlight) {
+            this.highlight = highlight;
+        };
+        Menu.prototype.addItem = function (item) {
+            this.items.push(item);
+        };
+        Menu.prototype.selectIndex = function (index) {
+            if (index >= this.items.length)
+                return;
+            this.index = index;
+            this.highlight.centerX = this.items[index].text.textBounds.centerX;
+            this.highlight.centerY = this.items[index].text.textBounds.centerY;
+        };
+        Menu.prototype.selectNext = function () {
+            if (this.items.length == 0)
+                return;
+            this.selectIndex((this.index + 1) % this.items.length);
+        };
+        Menu.prototype.selectPrevious = function () {
+            if (this.items.length == 0)
+                return;
+            this.selectIndex((this.index - 1 + this.items.length) % this.items.length);
+        };
+        Menu.prototype.doAction = function () {
+            if (this.items.length == 0)
+                return;
+            this.items[this.index].action();
+        };
+        return Menu;
+    }());
+    Tsgame.Menu = Menu;
+})(Tsgame || (Tsgame = {}));
+var Tsgame;
+(function (Tsgame) {
+    var MenuItem = (function () {
+        function MenuItem(text, action) {
+            this.text = text;
+            this.action = action;
+        }
+        return MenuItem;
+    }());
+    Tsgame.MenuItem = MenuItem;
 })(Tsgame || (Tsgame = {}));
 var Tsgame;
 (function (Tsgame) {
@@ -226,6 +286,34 @@ var Tsgame;
 (function (Tsgame) {
     var State;
     (function (State) {
+        var Help = (function (_super) {
+            __extends(Help, _super);
+            function Help() {
+                return _super !== null && _super.apply(this, arguments) || this;
+            }
+            Help.prototype.create = function () {
+                var headingStyle = {
+                    font: "90px Bungee Hairline",
+                    fill: "#fff",
+                    boundsAlignH: "center"
+                };
+                var headingBounds = new Phaser.Rectangle(0, 0, 0, 0);
+                headingBounds.width = 400;
+                headingBounds.height = 90;
+                headingBounds.centerX = this.game.width / 2;
+                headingBounds.centerY = 100;
+                var heading = this.add.text(0, 0, "How to play", headingStyle);
+                heading.setTextBounds(headingBounds.x, headingBounds.y, headingBounds.width, headingBounds.height);
+            };
+            return Help;
+        }(Phaser.State));
+        State.Help = Help;
+    })(State = Tsgame.State || (Tsgame.State = {}));
+})(Tsgame || (Tsgame = {}));
+var Tsgame;
+(function (Tsgame) {
+    var State;
+    (function (State) {
         var Level = (function (_super) {
             __extends(Level, _super);
             function Level() {
@@ -280,6 +368,7 @@ var Tsgame;
                 return _super !== null && _super.apply(this, arguments) || this;
             }
             MainMenu.prototype.create = function () {
+                var _this = this;
                 var titleStyle = {
                     font: "180px Bungee Outline",
                     fill: "#fff",
@@ -310,8 +399,6 @@ var Tsgame;
                 var how = this.add.text(0, 0, "How?", itemStyle);
                 how.setTextBounds(itemBounds.x, itemBounds.y, itemBounds.width, itemBounds.height);
                 // this.game.debug.rectangle(itemBounds, "#0f0", false);
-                this.items = [play, how];
-                this.selection = 0;
                 var highlightGraphics = new Phaser.Graphics(this.game, 0, 0);
                 highlightGraphics.lineStyle(5, 0xFFFFFF);
                 highlightGraphics.moveTo(5, 5);
@@ -322,8 +409,7 @@ var Tsgame;
                 this.highlight.width = 500;
                 this.highlight.height = 10;
                 this.highlight.anchor.setTo(0.5, 0.5);
-                this.highlight.centerX = this.game.width / 2;
-                this.highlight.centerY = play.textBounds.centerY;
+                this.menu = new Tsgame.Menu(this.highlight, new Tsgame.MenuItem(play, function () { return _this.game.state.start("Level"); }), new Tsgame.MenuItem(how, function () { return _this.game.state.start("Help"); }));
                 this.lastMoved = this.game.time.now - 100;
                 this.filter = new Phaser.Filter(this.game, null, this.game.cache.getShader('tv'));
                 this.filter.uniforms.resolution = { type: '3f', value: { x: this.game.width, y: this.game.height, z: 0.0 } };
@@ -331,17 +417,26 @@ var Tsgame;
             };
             MainMenu.prototype.update = function () {
                 var elapsed = this.game.time.now - this.lastMoved;
-                if (elapsed > 200) {
-                    if (this.input.keyboard.isDown(Phaser.KeyCode.DOWN)) {
-                        this.selection = this.mod(this.selection + 1, this.items.length);
+                var action = this.input.keyboard.isDown(Phaser.KeyCode.ENTER)
+                    || this.input.keyboard.isDown(Phaser.KeyCode.SPACEBAR);
+                var down = this.input.keyboard.isDown(Phaser.KeyCode.DOWN);
+                var up = this.input.keyboard.isDown(Phaser.KeyCode.UP);
+                if (action) {
+                    this.menu.doAction();
+                }
+                if (elapsed > 300) {
+                    if (down) {
+                        this.menu.selectNext();
                         this.lastMoved = this.game.time.now;
                     }
-                    if (this.input.keyboard.isDown(Phaser.KeyCode.UP)) {
-                        this.selection = this.mod(this.selection - 1, this.items.length);
+                    if (up) {
+                        this.menu.selectPrevious();
                         this.lastMoved = this.game.time.now;
                     }
                 }
-                this.highlight.centerY = this.items[this.selection].textBounds.centerY;
+                if (!up && !down) {
+                    this.lastMoved = 0;
+                }
                 this.filter.update();
             };
             MainMenu.prototype.mod = function (i, n) {
