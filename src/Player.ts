@@ -53,7 +53,7 @@ module Tsgame {
         }
 
         update() {
-            let time = this.game.time.elapsedMS;
+            let time = this.game.time.physicsElapsedMS;
 
             if (this.rope.exists) {
                 this.updateSwinging(time);

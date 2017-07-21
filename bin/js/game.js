@@ -139,7 +139,7 @@ var Tsgame;
             return _this;
         }
         Player.prototype.update = function () {
-            var time = this.game.time.elapsedMS;
+            var time = this.game.time.physicsElapsedMS;
             if (this.rope.exists) {
                 this.updateSwinging(time);
             }
